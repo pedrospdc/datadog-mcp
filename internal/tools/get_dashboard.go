@@ -11,7 +11,7 @@ import (
 
 // GetDashboardInput defines the input for the get_dashboard tool.
 type GetDashboardInput struct {
-	DashboardID string `json:"dashboard_id" jsonschema:"required,description=The dashboard ID to retrieve"`
+	DashboardID string `json:"dashboard_id" jsonschema:"The dashboard ID to retrieve"`
 }
 
 func registerGetDashboard(server *mcp.Server, client *datadog.Client) {

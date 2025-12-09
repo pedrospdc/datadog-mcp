@@ -12,9 +12,9 @@ import (
 
 // QueryMetricsInput defines the input for the query_metrics tool.
 type QueryMetricsInput struct {
-	Query string `json:"query" jsonschema:"required,description=Datadog metric query string (e.g. avg:system.cpu.user{*} by {host})"`
-	From  string `json:"from" jsonschema:"description=Start time in RFC3339 format or relative (e.g. now-1h). Defaults to 1 hour ago"`
-	To    string `json:"to" jsonschema:"description=End time in RFC3339 format or relative (e.g. now). Defaults to now"`
+	Query string `json:"query" jsonschema:"Datadog metric query string, e.g. avg:system.cpu.user{*} by {host}"`
+	From  string `json:"from,omitempty" jsonschema:"Start time in RFC3339 format or relative, e.g. now-1h. Defaults to 1 hour ago"`
+	To    string `json:"to,omitempty" jsonschema:"End time in RFC3339 format or relative, e.g. now. Defaults to now"`
 }
 
 func registerQueryMetrics(server *mcp.Server, client *datadog.Client) {

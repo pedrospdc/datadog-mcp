@@ -11,8 +11,8 @@ import (
 
 // ListDashboardsInput defines the input for the list_dashboards tool.
 type ListDashboardsInput struct {
-	FilterShared  bool `json:"filter_shared" jsonschema:"description=Filter to only shared dashboards"`
-	FilterDeleted bool `json:"filter_deleted" jsonschema:"description=Include deleted dashboards"`
+	FilterShared  bool `json:"filter_shared,omitempty" jsonschema:"Filter to only shared dashboards"`
+	FilterDeleted bool `json:"filter_deleted,omitempty" jsonschema:"Include deleted dashboards"`
 }
 
 func registerListDashboards(server *mcp.Server, client *datadog.Client) {

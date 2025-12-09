@@ -13,9 +13,9 @@ import (
 
 // ListMetricsInput defines the input for the list_metrics tool.
 type ListMetricsInput struct {
-	TagFilter string `json:"tag_filter" jsonschema:"description=Filter metrics by tag (e.g. env:production)"`
-	Host      string `json:"host" jsonschema:"description=Filter metrics by host name"`
-	Prefix    string `json:"prefix" jsonschema:"description=Filter metrics by name prefix (client-side filtering)"`
+	TagFilter string `json:"tag_filter,omitempty" jsonschema:"Filter metrics by tag, e.g. env:production"`
+	Host      string `json:"host,omitempty" jsonschema:"Filter metrics by host name"`
+	Prefix    string `json:"prefix,omitempty" jsonschema:"Filter metrics by name prefix (client-side filtering)"`
 }
 
 func registerListMetrics(server *mcp.Server, client *datadog.Client) {

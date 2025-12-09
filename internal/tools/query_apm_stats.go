@@ -12,11 +12,11 @@ import (
 
 // QueryAPMStatsInput defines the input for the query_apm_stats tool.
 type QueryAPMStatsInput struct {
-	Service   string `json:"service" jsonschema:"required,description=The service name to query stats for"`
-	Operation string `json:"operation" jsonschema:"description=Specific operation/resource name to filter by"`
-	Env       string `json:"env" jsonschema:"description=Environment to filter by (e.g. production or staging)"`
-	From      string `json:"from" jsonschema:"description=Start time. Defaults to 1 hour ago"`
-	To        string `json:"to" jsonschema:"description=End time. Defaults to now"`
+	Service   string `json:"service" jsonschema:"The service name to query stats for"`
+	Operation string `json:"operation,omitempty" jsonschema:"Specific operation/resource name to filter by"`
+	Env       string `json:"env,omitempty" jsonschema:"Environment to filter by, e.g. production or staging"`
+	From      string `json:"from,omitempty" jsonschema:"Start time. Defaults to 1 hour ago"`
+	To        string `json:"to,omitempty" jsonschema:"End time. Defaults to now"`
 }
 
 // APMStatsResult contains APM statistics for a service.

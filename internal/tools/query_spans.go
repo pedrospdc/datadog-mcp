@@ -11,10 +11,10 @@ import (
 
 // QuerySpansInput defines the input for the query_spans tool.
 type QuerySpansInput struct {
-	Query string `json:"query" jsonschema:"description=Span search query (e.g. service:my-service or @http.status_code:500). Defaults to * (all spans)"`
-	From  string `json:"from" jsonschema:"description=Start time (e.g. now-15m or now-1h). Defaults to now-15m"`
-	To    string `json:"to" jsonschema:"description=End time (e.g. now). Defaults to now"`
-	Limit int32  `json:"limit" jsonschema:"description=Maximum number of spans to return (1-1000). Defaults to 50"`
+	Query string `json:"query,omitempty" jsonschema:"Span search query, e.g. service:my-service or @http.status_code:500. Defaults to * (all spans)"`
+	From  string `json:"from,omitempty" jsonschema:"Start time, e.g. now-15m or now-1h. Defaults to now-15m"`
+	To    string `json:"to,omitempty" jsonschema:"End time, e.g. now. Defaults to now"`
+	Limit int32  `json:"limit,omitempty" jsonschema:"Maximum number of spans to return (1-1000). Defaults to 50"`
 }
 
 func registerQuerySpans(server *mcp.Server, client *datadog.Client) {
