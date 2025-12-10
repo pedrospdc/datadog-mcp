@@ -29,10 +29,11 @@ type Span struct {
 type QuerySpansResult struct {
 	Spans      []Span `json:"spans"`
 	TotalCount int    `json:"total_count"`
+	NextCursor string `json:"next_cursor,omitempty"`
 }
 
 // QuerySpans queries APM spans from Datadog.
-func (c *Client) QuerySpans(ctx context.Context, query string, from, to string, limit int32) (*QuerySpansResult, error) {
+func (c *Client) QuerySpans(ctx context.Context, query string, from, to string, limit int32, cursor string) (*QuerySpansResult, error) {
 	if from == "" {
 		from = "now-15m"
 	}
@@ -46,6 +47,13 @@ func (c *Client) QuerySpans(ctx context.Context, query string, from, to string, 
 		limit = 1000
 	}
 
+	page := &datadogV2.SpansListRequestPage{
+		Limit: datadog.PtrInt32(limit),
+	}
+	if cursor != "" {
+		page.Cursor = datadog.PtrString(cursor)
+	}
+
 	body := datadogV2.SpansListRequest{
 		Data: &datadogV2.SpansListRequestData{
 			Attributes: &datadogV2.SpansListRequestAttributes{
@@ -57,9 +65,7 @@ func (c *Client) QuerySpans(ctx context.Context, query string, from, to string, 
 				Options: &datadogV2.SpansQueryOptions{
 					Timezone: datadog.PtrString("UTC"),
 				},
-				Page: &datadogV2.SpansListRequestPage{
-					Limit: datadog.PtrInt32(limit),
-				},
+				Page: page,
 				Sort: datadogV2.SPANSSORT_TIMESTAMP_DESCENDING.Ptr(),
 			},
 			Type: datadogV2.SPANSLISTREQUESTTYPE_SEARCH_REQUEST.Ptr(),
@@ -105,6 +111,13 @@ func (c *Client) QuerySpans(ctx context.Context, query string, from, to string, 
 			result.Spans = append(result.Spans, span)
 		}
 		result.TotalCount = len(result.Spans)
+	}
+
+	// Extract next cursor from response metadata
+	if resp.Meta != nil {
+		if page := resp.Meta.GetPage(); page.After != nil {
+			result.NextCursor = *page.After
+		}
 	}
 
 	return result, nil

@@ -24,10 +24,12 @@ type MetricSeries struct {
 
 // QueryMetricsResult contains the result of a metrics query.
 type QueryMetricsResult struct {
-	Series []MetricSeries `json:"series"`
-	Query  string         `json:"query"`
-	From   time.Time      `json:"from"`
-	To     time.Time      `json:"to"`
+	Series      []MetricSeries `json:"series"`
+	Query       string         `json:"query"`
+	From        time.Time      `json:"from"`
+	To          time.Time      `json:"to"`
+	TotalSeries int            `json:"total_series,omitempty"`
+	Truncated   bool           `json:"truncated,omitempty"`
 }
 
 // QueryMetrics queries timeseries metrics from Datadog.
@@ -76,6 +78,9 @@ func (c *Client) QueryMetrics(ctx context.Context, query string, from, to time.T
 type ListMetricsResult struct {
 	Metrics []string `json:"metrics"`
 	From    int64    `json:"from"`
+	Total   int      `json:"total"`
+	Offset  int      `json:"offset"`
+	HasMore bool     `json:"has_more"`
 }
 
 // ListMetrics lists active metrics from Datadog.

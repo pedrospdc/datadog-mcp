@@ -11,10 +11,11 @@ import (
 
 // QuerySpansInput defines the input for the query_spans tool.
 type QuerySpansInput struct {
-	Query string `json:"query,omitempty" jsonschema:"Span search query, e.g. service:my-service or @http.status_code:500. Defaults to * (all spans)"`
-	From  string `json:"from,omitempty" jsonschema:"Start time, e.g. now-15m or now-1h. Defaults to now-15m"`
-	To    string `json:"to,omitempty" jsonschema:"End time, e.g. now. Defaults to now"`
-	Limit int32  `json:"limit,omitempty" jsonschema:"Maximum number of spans to return (1-1000). Defaults to 50"`
+	Query  string `json:"query,omitempty" jsonschema:"Span search query, e.g. service:my-service or @http.status_code:500. Defaults to * (all spans)"`
+	From   string `json:"from,omitempty" jsonschema:"Start time, e.g. now-15m or now-1h. Defaults to now-15m"`
+	To     string `json:"to,omitempty" jsonschema:"End time, e.g. now. Defaults to now"`
+	Limit  int32  `json:"limit,omitempty" jsonschema:"Maximum number of spans to return (1-1000). Defaults to 50"`
+	Cursor string `json:"cursor,omitempty" jsonschema:"Pagination cursor from previous response to get next page of results"`
 }
 
 func registerQuerySpans(server *mcp.Server, client *datadog.Client) {
@@ -27,7 +28,7 @@ func registerQuerySpans(server *mcp.Server, client *datadog.Client) {
 			query = "*"
 		}
 
-		result, err := client.QuerySpans(ctx, query, input.From, input.To, input.Limit)
+		result, err := client.QuerySpans(ctx, query, input.From, input.To, input.Limit, input.Cursor)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -44,6 +45,10 @@ func registerQuerySpans(server *mcp.Server, client *datadog.Client) {
 			summary += fmt.Sprintf("    Status: %s, Duration: %.2fms\n", span.Status, float64(span.Duration)/1e6)
 			summary += fmt.Sprintf("    TraceID: %s, SpanID: %s\n", span.TraceID, span.SpanID)
 			summary += "\n"
+		}
+
+		if result.NextCursor != "" {
+			summary += fmt.Sprintf("\nNext page cursor: %s", result.NextCursor)
 		}
 
 		return &mcp.CallToolResult{

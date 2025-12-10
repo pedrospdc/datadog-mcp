@@ -23,7 +23,9 @@ type DashboardSummary struct {
 // ListDashboardsResult contains the result of listing dashboards.
 type ListDashboardsResult struct {
 	Dashboards []DashboardSummary `json:"dashboards"`
-	Total      int                `json:"total"`
+	Total      int64              `json:"total"`
+	Start      int64              `json:"start"`
+	HasMore    bool               `json:"has_more"`
 }
 
 // DashboardWidget represents a widget in a dashboard.
@@ -58,14 +60,20 @@ type Dashboard struct {
 	WidgetCount       int                         `json:"widget_count"`
 }
 
-// ListDashboards retrieves all dashboards from Datadog.
-func (c *Client) ListDashboards(ctx context.Context, filterShared, filterDeleted bool) (*ListDashboardsResult, error) {
+// ListDashboards retrieves dashboards from Datadog with pagination support.
+func (c *Client) ListDashboards(ctx context.Context, filterShared, filterDeleted bool, limit, start int64) (*ListDashboardsResult, error) {
 	opts := datadogV1.NewListDashboardsOptionalParameters()
 	if filterShared {
 		opts = opts.WithFilterShared(filterShared)
 	}
 	if filterDeleted {
 		opts = opts.WithFilterDeleted(filterDeleted)
+	}
+	if limit > 0 {
+		opts = opts.WithCount(limit)
+	}
+	if start > 0 {
+		opts = opts.WithStart(start)
 	}
 
 	resp, _, err := c.dashboardsAPI.ListDashboards(c.ctx, *opts)
@@ -75,6 +83,7 @@ func (c *Client) ListDashboards(ctx context.Context, filterShared, filterDeleted
 
 	result := &ListDashboardsResult{
 		Dashboards: make([]DashboardSummary, 0),
+		Start:      start,
 	}
 
 	if resp.Dashboards != nil {
@@ -111,7 +120,17 @@ func (c *Client) ListDashboards(ctx context.Context, filterShared, filterDeleted
 		}
 	}
 
-	result.Total = len(result.Dashboards)
+	// Get total count from response or count returned items
+	if resp.Dashboards != nil {
+		result.Total = int64(len(resp.Dashboards))
+		// Check if there are more results
+		effectiveLimit := limit
+		if effectiveLimit <= 0 {
+			effectiveLimit = 100 // default limit
+		}
+		result.HasMore = int64(len(resp.Dashboards)) >= effectiveLimit
+	}
+
 	return result, nil
 }
 

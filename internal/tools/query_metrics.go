@@ -12,9 +12,11 @@ import (
 
 // QueryMetricsInput defines the input for the query_metrics tool.
 type QueryMetricsInput struct {
-	Query string `json:"query" jsonschema:"Datadog metric query string, e.g. avg:system.cpu.user{*} by {host}"`
-	From  string `json:"from,omitempty" jsonschema:"Start time in RFC3339 format or relative, e.g. now-1h. Defaults to 1 hour ago"`
-	To    string `json:"to,omitempty" jsonschema:"End time in RFC3339 format or relative, e.g. now. Defaults to now"`
+	Query         string `json:"query" jsonschema:"Datadog metric query string, e.g. avg:system.cpu.user{*} by {host}"`
+	From          string `json:"from,omitempty" jsonschema:"Start time in RFC3339 format or relative, e.g. now-1h. Defaults to 1 hour ago"`
+	To            string `json:"to,omitempty" jsonschema:"End time in RFC3339 format or relative, e.g. now. Defaults to now"`
+	MaxDataPoints int    `json:"max_data_points,omitempty" jsonschema:"Maximum number of data points to return per series. Defaults to 300. Use 0 for unlimited."`
+	MaxSeries     int    `json:"max_series,omitempty" jsonschema:"Maximum number of series to return. Defaults to 100. Use 0 for unlimited."`
 }
 
 func registerQueryMetrics(server *mcp.Server, client *datadog.Client) {
@@ -52,15 +54,56 @@ func registerQueryMetrics(server *mcp.Server, client *datadog.Client) {
 			return nil, nil, err
 		}
 
-		summary := fmt.Sprintf("Query: %s\nTime Range: %s to %s\nSeries Count: %d\n",
+		// Apply pagination limits
+		maxSeries := input.MaxSeries
+		if maxSeries <= 0 {
+			maxSeries = 100
+		}
+		maxDataPoints := input.MaxDataPoints
+		if maxDataPoints <= 0 {
+			maxDataPoints = 300
+		}
+
+		totalSeries := len(result.Series)
+		truncatedSeries := false
+		truncatedDataPoints := false
+
+		// Limit number of series
+		if maxSeries > 0 && len(result.Series) > maxSeries {
+			result.Series = result.Series[:maxSeries]
+			truncatedSeries = true
+		}
+
+		// Limit data points per series
+		for i := range result.Series {
+			if maxDataPoints > 0 && len(result.Series[i].DataPoints) > maxDataPoints {
+				result.Series[i].DataPoints = result.Series[i].DataPoints[:maxDataPoints]
+				truncatedDataPoints = true
+			}
+		}
+
+		summary := fmt.Sprintf("Query: %s\nTime Range: %s to %s\nSeries Count: %d",
 			input.Query, from.Format(time.RFC3339), to.Format(time.RFC3339), len(result.Series))
 
+		if truncatedSeries {
+			summary += fmt.Sprintf(" (truncated from %d, use max_series to see more)", totalSeries)
+		}
+		summary += "\n"
+
 		for i, series := range result.Series {
-			summary += fmt.Sprintf("\n[%d] %s (%d data points)", i+1, series.Metric, len(series.DataPoints))
+			dataPointInfo := fmt.Sprintf("%d data points", len(series.DataPoints))
+			if truncatedDataPoints {
+				dataPointInfo += " (truncated, use max_data_points to see more)"
+			}
+			summary += fmt.Sprintf("\n[%d] %s (%s)", i+1, series.Metric, dataPointInfo)
 			if len(series.Tags) > 0 {
 				summary += fmt.Sprintf(" - Tags: %v", series.Tags)
 			}
 		}
+
+		// Add pagination info to result
+		result.TotalSeries = totalSeries
+		result.Truncated = truncatedSeries || truncatedDataPoints
 
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{
